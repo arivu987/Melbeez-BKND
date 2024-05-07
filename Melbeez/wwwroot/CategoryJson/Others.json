@@ -1,0 +1,114 @@
+[
+    {
+        "Type": "Text",
+        "IsRequired": true,
+        "RequiredMessage": "Product Name is required",
+        "Placeholder": "Product Name",
+        "Sequence": 1,
+        "DropdownData": null,
+        "Id": "id_ProductName",
+        "Field": "Name",
+        "Value": null
+    },
+    {
+        "Type": "Text",
+        "IsRequired": false,
+        "RequiredMessage": "Serial Number is required",
+        "Placeholder": "Serial Number",
+        "Sequence": 2,
+        "DropdownData": null,
+        "Id": "id_SerialNumber",
+        "Field": "SerialNumber",
+        "Value": null
+    },
+    {
+        "Type": "Text",
+        "IsRequired": false,
+        "RequiredMessage": "Model Number is required",
+        "Placeholder": "Model Number",
+        "Sequence": 3,
+        "DropdownData": null,
+        "Id": "id_ModelNumber",
+        "Field": "ModelNumber",
+        "Value": null
+    },
+    {
+        "Type": "Text",
+        "IsRequired": false,
+        "RequiredMessage": "Manufacture Name is required",
+        "Placeholder": "Manufacture Name",
+        "Sequence": 4,
+        "DropdownData": null,
+        "Id": "id_ManufacturerName",
+        "Field": "ManufacturerName",
+        "Value": null
+    },
+    {
+        "Type": "DateTime",
+        "IsRequired": true,
+        "RequiredMessage": "Purchase Date is required",
+        "Placeholder": "Purchase Date",
+        "Sequence": 5,
+        "DropdownData": null,
+        "Id": "id_PurchaseDate",
+        "Field": "PurchaseDate",
+        "Value": null
+    },
+    {
+        "Type": "Number",
+        "IsRequired": false,
+        "RequiredMessage": "Manufacture Year is required",
+        "Placeholder": "Manufacture Year",
+        "Sequence": 6,
+        "DropdownData": null,
+        "Id": "id_ManufactureYear",
+        "Field": "ManufactureYear",
+        "Value": null
+    },
+    {
+        "Type": "Text",
+        "IsRequired": false,
+        "RequiredMessage": "Vendor name is required",
+        "Placeholder": "Vendor Name",
+        "Sequence": 7,
+        "DropdownData": null,
+        "Id": "id_VendorName",
+        "Field": "VendorName",
+        "Value": null
+    },
+    {
+        "Type": "Number",
+        "IsRequired": false,
+        "RequiredMessage": "Price is required",
+        "Placeholder": "Price",
+        "Sequence": 8,
+        "DropdownData": null,
+        "Id": "id_Price",
+        "Field": "Price",
+        "Value": null
+    },
+    {
+        "Type": "TextArea",
+        "IsRequired": false,
+        "RequiredMessage": null,
+        "Placeholder": "Description",
+        "Sequence": 9,
+        "DropdownData": null,
+		"Maxlength": 256,
+        "Id": "id_Description",
+        "Field": "Description",
+        "Value": null
+    },
+    {
+        "Type": "TextArea",
+        "IsRequired": false,
+        "RequiredMessage": null,
+        "Placeholder": "Notes",
+        "Sequence": 10,
+        "DropdownData": null,
+		"Maxlength": 256,
+        "Id": "id_Notes",
+        "Field": "Notes",
+        "Value": null
+    }
+]

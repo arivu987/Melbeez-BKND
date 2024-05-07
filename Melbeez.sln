@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32210.238
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Melbeez", "Melbeez\Melbeez.csproj", "{DB645F1A-F9A7-4517-ADE5-9EB03DA376E2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Melbeez.Business", "Melbeez.Business\Melbeez.Business.csproj", "{9E53C56B-5B84-483E-836B-C28612D156A3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Melbeez.Common", "Melbeez.Common\Melbeez.Common.csproj", "{E8FA3B46-3B47-4AD6-AAE9-8BD908DBD1AD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Melbeez.Data", "Melbeez.Data\Melbeez.Data.csproj", "{BBBA19C3-847B-4F86-BCA3-E0F865A4278A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Melbeez.Domain", "Melbeez.Domain\Melbeez.Domain.csproj", "{F2AD31C5-0D44-48BD-BF7C-8AF00223B2FE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{162A1E03-9D2B-4061-AE99-26498506EB04}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Melbeez.API.MediaUpload", "Melbeez.API.MediaUpload\Melbeez.API.MediaUpload.csproj", "{2E8ABBF5-9F4E-4EC7-9305-5EEAC870837E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DB645F1A-F9A7-4517-ADE5-9EB03DA376E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB645F1A-F9A7-4517-ADE5-9EB03DA376E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB645F1A-F9A7-4517-ADE5-9EB03DA376E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB645F1A-F9A7-4517-ADE5-9EB03DA376E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E53C56B-5B84-483E-836B-C28612D156A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E53C56B-5B84-483E-836B-C28612D156A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E53C56B-5B84-483E-836B-C28612D156A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E53C56B-5B84-483E-836B-C28612D156A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8FA3B46-3B47-4AD6-AAE9-8BD908DBD1AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8FA3B46-3B47-4AD6-AAE9-8BD908DBD1AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8FA3B46-3B47-4AD6-AAE9-8BD908DBD1AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8FA3B46-3B47-4AD6-AAE9-8BD908DBD1AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBBA19C3-847B-4F86-BCA3-E0F865A4278A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBBA19C3-847B-4F86-BCA3-E0F865A4278A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBBA19C3-847B-4F86-BCA3-E0F865A4278A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBBA19C3-847B-4F86-BCA3-E0F865A4278A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2AD31C5-0D44-48BD-BF7C-8AF00223B2FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2AD31C5-0D44-48BD-BF7C-8AF00223B2FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2AD31C5-0D44-48BD-BF7C-8AF00223B2FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2AD31C5-0D44-48BD-BF7C-8AF00223B2FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E8ABBF5-9F4E-4EC7-9305-5EEAC870837E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E8ABBF5-9F4E-4EC7-9305-5EEAC870837E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E8ABBF5-9F4E-4EC7-9305-5EEAC870837E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E8ABBF5-9F4E-4EC7-9305-5EEAC870837E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2E8ABBF5-9F4E-4EC7-9305-5EEAC870837E} = {162A1E03-9D2B-4061-AE99-26498506EB04}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2EFEC956-9FA2-4BE3-B1DE-C5AEDFC3E2BD}
+	EndGlobalSection
+EndGlobal

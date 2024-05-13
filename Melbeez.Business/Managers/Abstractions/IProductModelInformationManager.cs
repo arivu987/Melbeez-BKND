@@ -20,5 +20,6 @@ namespace Melbeez.Business.Managers.Abstractions
         Task<ManagerBaseResponse<List<BulkUploadInsertedRowStatusResponseModel>>> UploadBulkProductModels(IFormFile file, string userId);
         Task<ManagerBaseResponse<bool>> IsModelAndManufacturerAlreadyExists(string manufacturerName, string modelNumber);
         Task<ManagerBaseResponse<IEnumerable<ManufacturerModelInfoResponse>>> GetManufacturerModelNumber(string manufacturerName);
+        Task<ManagerBaseResponse<ProcessImageResponseModel>> ProcessImageWithOCR(IFormFile imageFile);
     }
 }

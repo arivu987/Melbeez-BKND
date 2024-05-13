@@ -17,6 +17,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RestSharp;
+using SendGrid;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -572,6 +574,67 @@ namespace Melbeez.Business.Managers
             {
                 Result = result
             };
+        }
+        public async Task<ManagerBaseResponse<ProcessImageResponseModel>> ProcessImageWithOCR(IFormFile imageFile)
+        {
+            var responseModel = new ManagerBaseResponse<ProcessImageResponseModel>();
+            try
+            {
+                var result = new ProcessImageResponseModel
+                {
+                    BrandNames = new List<string>(),
+                    ModelNumbers = new List<string>(),
+                    SerialNumbers = new List<string>()
+                };
+
+                var tempFilePath = Path.Combine(Path.GetTempPath(), imageFile.FileName);
+                using (var fileStream = new FileStream(tempFilePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(fileStream);
+                }
+
+                var options = new RestClientOptions(configuration.GetValue<string>("OCRServiceUrl"))
+                {
+                    MaxTimeout = -1
+                };
+                var client = new RestClient(options);
+
+                var request = new RestRequest(configuration.GetValue<string>("OCRAPIEndPoint"), Method.Post)
+                {
+                    AlwaysMultipartFormData = true
+                };
+                request.AddFile("image_data", tempFilePath);
+
+                var response = await client.ExecuteAsync(request);
+                if (response.IsSuccessful)
+                {
+                    var processedImageData = JsonConvert.DeserializeObject<ProcessOCRImageResponseModel>(response.Content.ToString());
+                    result.BrandNames.AddRange(GetTopValues(processedImageData.brand_names));
+                    result.ModelNumbers.AddRange(GetTopValues(processedImageData.model_numbers));
+                    result.SerialNumbers.AddRange(GetTopValues(processedImageData.serial_numbers));
+                    responseModel.Result = result;
+                }
+                else
+                {
+                    responseModel.Result = null;
+                    responseModel.StatusCode = (int)response.StatusCode;
+                    responseModel.Message = "The text in the image couldn't be detected. Could you please provide a clear image?";
+                }
+            }
+            catch (Exception ex)
+            {
+                responseModel.Result = null;
+                responseModel.Message = ex.Message;
+            }
+
+            return responseModel;
+        }
+        static List<string> GetTopValues(List<OCRItem> items)
+        {
+            return items?
+                .OrderByDescending(x => x.confidence)
+                .Select(x => x.value)
+                .ToList() ?? new List<string>();
         }
     }
 }

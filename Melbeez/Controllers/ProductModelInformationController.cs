@@ -171,5 +171,18 @@ namespace Melbeez.Controllers
         {
             return ResponseResult(await _productModelInformationManager.GetManufacturerModelNumber(manufacturerName));
         }
+
+        /// <summary>
+        /// Processes image data to extract model number and manufacturer name using OCR.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        [HttpPost("process-image")]
+        [RequestFormLimits(MultipartBodyLengthLimit = 629145600)]
+        [ProducesResponseType(typeof(ApiBaseResponse<ProcessImageResponseModel>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ProcessImageWithOCR(IFormFile image)
+        {
+            return ResponseResult(await _productModelInformationManager.ProcessImageWithOCR(image));
+        }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Mail;
@@ -68,7 +69,7 @@ namespace Melbeez.Common.Services
             {
                 throw;
             }
-           
+
         }
         public bool SendSMS(string MobileNo, string Message, long SMSTemplatesId)
         {
@@ -92,6 +93,69 @@ namespace Melbeez.Common.Services
             catch (Exception e)
             {
                 return false;
+            }
+        }
+        public async Task SendMailHostinger(string to, string subject, string htmlMessag, string attachmentPath, string attachmentFileName)
+        {
+            try
+            {
+                using (var message = new MailMessage())
+                {
+                    var Host = configuration["EmailSender.Hostinger:Host"];
+                    var Port = Convert.ToInt32(configuration["EmailSender.Hostinger:Port"]);
+                    var EnableSSL = Convert.ToBoolean(configuration["EmailSender.Hostinger:EnableSSL"]);
+                    var UserName = configuration["EmailSender.Hostinger:UserName"];
+                    var Password = configuration["EmailSender.Hostinger:Password"];
+
+                    message.To.Add(new MailAddress(to));
+                    message.From = new MailAddress(UserName);
+                    message.Subject = subject;
+                    message.Body = htmlMessag;
+                    message.IsBodyHtml = true;
+
+                    if (!string.IsNullOrEmpty(attachmentPath))
+                    {
+                        byte[] bytes;
+
+                        if (attachmentPath.Contains("http"))
+                        {
+
+                            using (HttpClient httpClient = new HttpClient())
+                            {
+                                HttpResponseMessage response = await httpClient.GetAsync(attachmentPath);
+                                bytes = await response.Content.ReadAsByteArrayAsync();
+                            }
+                        }
+                        else
+                        {
+                            bytes = System.IO.File.ReadAllBytes(attachmentPath);
+                        }
+                        MemoryStream memoryStream = new MemoryStream(bytes);
+                        System.Net.Mail.Attachment attachment = new System.Net.Mail.Attachment(memoryStream, attachmentFileName);
+                        message.Attachments.Add(attachment);
+                    }
+
+
+                    using (var client = new SmtpClient(Host))
+                    {
+                        client.UseDefaultCredentials = false;
+                        client.Port = Port;
+                        client.Credentials = new NetworkCredential(UserName, Password);
+                        client.EnableSsl = EnableSSL;
+
+                        try
+                        {
+                            await client.SendMailAsync(message);
+                        }
+                        catch (Exception e)
+                        {
+
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
             }
         }
     }

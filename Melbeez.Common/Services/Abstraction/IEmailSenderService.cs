@@ -8,5 +8,6 @@ namespace Melbeez.Common.Services.Abstraction
         Task SendAsync(string to, string subject, string htmlMessage);
         Task<Response> SendMail(string to, string subject, string htmlMessag, string attachmentPath, string attachmentFileName);
         bool SendSMS(string MobileNo, string Message, long SMSTemplatesId);
+        Task SendMailHostinger(string to, string subject, string htmlMessag, string attachmentPath, string attachmentFileName);
     }
 }

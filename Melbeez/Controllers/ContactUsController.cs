@@ -28,7 +28,7 @@ namespace Melbeez.Controllers
         private readonly IContactusManager _contactusManager;
         public ContactUsController(IContactusManager contactusManager)
         {
-          _contactusManager = contactusManager;
+            _contactusManager = contactusManager;
         }
 
         /// <summary>

@@ -140,11 +140,11 @@ namespace Melbeez.Business.Managers
                                              ? Path.Combine(configuration.GetValue<string>("MediaUploadConfiguration:BasePath"), response.Image)
                                              : null;
                         }
-                        
+
                         string[] emailIds = configuration["SendContactusMessage"].ToString().Split(',', ' ');
                         foreach (var emailId in emailIds)
                         {
-                            await emailSenderService.SendMail(emailId, model.Subject, htmlContent, attachmentPath, model.AttachImageName);
+                            await emailSenderService.SendMailHostinger(emailId, model.Subject, htmlContent, attachmentPath, model.AttachImageName);
                         }
                     }
                 }

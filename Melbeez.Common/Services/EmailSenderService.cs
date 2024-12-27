@@ -63,11 +63,15 @@ namespace Melbeez.Common.Services
                     var File = Convert.ToBase64String(bytes);
                     msg.AddAttachment(attachmentFileName, File);
                 }
-                return await client.SendEmailAsync(msg);
+                var responses = await client.SendEmailAsync(msg);
+                Console.WriteLine($"Response Status Code: {responses.StatusCode}");
+                Console.WriteLine($"Response Body: {await responses.Body.ReadAsStringAsync()}");
+                return responses;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                Console.WriteLine($"Error sending email: {ex.Message}");
+                throw new Exception($"Error sending email: {ex.Message}");
             }
 
         }

@@ -46,7 +46,7 @@ namespace Melbeez
             // Add services to the container.
 
             //services.AddScoped<IHttpContextAccessor, HttpContextAccessor>();            
-            services.AddTransient<IUserContextService, UserContextService>();            
+            services.AddTransient<IUserContextService, UserContextService>();
             services.AddTransient<IEmailSenderService, EmailSenderService>();
             services.AddTransient<ISMSSenderService, SMSSenderService>();
             services.ConfigureBusinessServices();
@@ -111,8 +111,8 @@ namespace Melbeez
                         },
                         new List<string>()
                     }
-                });               
-                
+                });
+
             });
             #endregion
 

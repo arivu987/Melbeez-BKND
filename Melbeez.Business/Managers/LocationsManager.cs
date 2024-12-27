@@ -68,14 +68,14 @@ namespace Melbeez.Business.Managers
                                   .FirstOrDefault(a => a.LocationId == x.Id && !a.IsDeleted)
                                   .CategoryId,
                     ProductsCount = x.ProductDetail
-                                    .Where(a => !a.IsDeleted && a.LocationId == x.Id 
+                                    .Where(a => !a.IsDeleted && a.LocationId == x.Id
                                              && a.Status != MovedStatus.Transferred && a.CreatedBy == userId)
                                     .Count(),
                     Currency = x.ProductDetail
                                 .FirstOrDefault(a => a.LocationId == x.Id && !a.IsDeleted)
                                 .Currency,
                     TotalProductsAmount = !x.ProductDetail.Any() ? null : Convert.ToDouble(x.ProductDetail
-                                           .Where(a => !a.IsDeleted && a.LocationId == x.Id 
+                                           .Where(a => !a.IsDeleted && a.LocationId == x.Id
                                                     && a.Status != MovedStatus.Transferred && a.CreatedBy == userId)
                                            .Select(b => b.Price)
                                            .Sum().ToString("#.00")),
@@ -213,7 +213,7 @@ namespace Melbeez.Business.Managers
                 Result = result
             };
         }
-        public async Task<ManagerBaseResponse<long?>> AddLocation(LocationsRequestModel model, string userId)
+        public async Task<ManagerBaseResponse<LocationsEntity>> AddLocation(LocationsRequestModel model, string userId)
         {
             try
             {
@@ -222,7 +222,7 @@ namespace Melbeez.Business.Managers
                     var isExists = await IsLocationAlreadyExists(null, model.Name, userId);
                     if (isExists)
                     {
-                        return new ManagerBaseResponse<long?>()
+                        return new ManagerBaseResponse<LocationsEntity>()
                         {
                             Message = "Location name already exists",
                             Result = null,
@@ -277,15 +277,18 @@ namespace Melbeez.Business.Managers
                         ReferenceId = model.Id.ToString()
                     }, userId);
 
-                    return new ManagerBaseResponse<long?>()
+                    // Fetch the complete record from the database
+                    var fullResponse = await unitOfWork.LocationsRepository.GetAsync(x => x.Id == response.Id);
+
+                    return new ManagerBaseResponse<LocationsEntity>()
                     {
                         Message = "Location added successfully.",
-                        Result = response.Id
+                        Result = fullResponse
                     };
                 }
                 else
                 {
-                    return new ManagerBaseResponse<long?>()
+                    return new ManagerBaseResponse<LocationsEntity>()
                     {
                         Message = "Invalid location request.",
                         Result = null,
@@ -295,7 +298,7 @@ namespace Melbeez.Business.Managers
             }
             catch (Exception ex)
             {
-                return new ManagerBaseResponse<long?>()
+                return new ManagerBaseResponse<LocationsEntity>()
                 {
                     Message = ex.Message,
                     Result = null,

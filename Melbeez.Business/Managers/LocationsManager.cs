@@ -193,7 +193,8 @@ namespace Melbeez.Business.Managers
                     ZipCode = x.ZipCode,
                     StateName = x.StateName,
                     CountryName = x.CountryName,
-                    Image = x.Image == null ? x.Image : mediaBaseUrl + x.Image,
+                    // Image = x.Image == null ? x.Image : mediaBaseUrl + x.Image,
+                    Image = x.Image,
                     TypeOfProperty = x.TypeOfProperty,
                     IsDefault = x.IsDefault,
                     IsMoving = x.ProductDetail.Where(a => a.LocationId == x.Id
@@ -217,95 +218,208 @@ namespace Melbeez.Business.Managers
         {
             try
             {
-                if (model.Id == 0)
-                {
-                    var isExists = await IsLocationAlreadyExists(null, model.Name, userId);
-                    if (isExists)
-                    {
-                        return new ManagerBaseResponse<LocationsEntity>()
-                        {
-                            Message = "Location name already exists",
-                            Result = null,
-                            StatusCode = 500
-                        };
-                    }
+                        
+             var mediaBaseUrl = configuration.GetValue<string>("MediaUploadConfiguration:MediaBaseUrl");
 
-                    var response = await unitOfWork.LocationsRepository.AddAsync(new LocationsEntity()
-                    {
-                        Id = model.Id,
-                        Name = model.Name,
-                        AddressLine1 = model.AddressLine1,
-                        AddressLine2 = model.AddressLine2,
-                        CityName = model.CityName,
-                        CountryName = model.CountryName,
-                        StateName = model.StateName,
-                        ZipCode = model.ZipCode,
-                        Image = model.Image,
-                        TypeOfProperty = model.TypeOfProperty,
-                        IsDefault = model.IsDefault,
-                        IsMoving = false,
-                        Status = MovedStatus.None,
-                        IsDeleted = false,
-                        CreatedBy = userId,
-                        CreatedOn = DateTime.UtcNow,
-                        UpdatedBy = userId,
-                        UpdatedOn = DateTime.UtcNow,
-                    });
-                    await unitOfWork.CommitAsync();
-
-                    if (response != null && response.Id != 0 && model.IsDefault)
-                    {
-                        var oldEntity = await unitOfWork
-                            .LocationsRepository
-                            .GetAsync(oldEntity => oldEntity.Id != response.Id && oldEntity.CreatedBy == userId
-                                                   && !oldEntity.IsDeleted && oldEntity.IsDefault);
-                        if (oldEntity != null)
-                        {
-                            oldEntity.IsDefault = false;
-                            oldEntity.UpdatedBy = userId;
-                            oldEntity.UpdatedOn = DateTime.UtcNow;
-                            await unitOfWork.CommitAsync();
-                        }
-                    }
-
-                    await sendNotificationManager.SendLocationUpdateNotification(new PushNotificationRequestModel()
-                    {
-                        RecipientId = userId,
-                        Title = "New Location has been added",
-                        Description = "New Location " + model.Name + " has been added",
-                        NotificationType = NotificationType.LocationUpdate,
-                        ReferenceId = model.Id.ToString()
-                    }, userId);
-
-                    // Fetch the complete record from the database
-                    var fullResponse = await unitOfWork.LocationsRepository.GetAsync(x => x.Id == response.Id);
-
-                    return new ManagerBaseResponse<LocationsEntity>()
-                    {
-                        Message = "Location added successfully.",
-                        Result = fullResponse
-                    };
-                }
-                else
-                {
-                    return new ManagerBaseResponse<LocationsEntity>()
-                    {
-                        Message = "Invalid location request.",
-                        Result = null,
-                        StatusCode = 500
-                    };
-                }
-            }
-            catch (Exception ex)
+            if (model.Id == 0)
+            {
+            var isExists = await IsLocationAlreadyExists(null, model.Name, userId);
+            if (isExists)
             {
                 return new ManagerBaseResponse<LocationsEntity>()
                 {
-                    Message = ex.Message,
+                    Message = "Location name already exists",
                     Result = null,
                     StatusCode = 500
                 };
             }
+
+            var response = await unitOfWork.LocationsRepository.AddAsync(new LocationsEntity()
+            {
+                Id = model.Id,
+                Name = model.Name,
+                AddressLine1 = model.AddressLine1,
+                AddressLine2 = model.AddressLine2,
+                CityName = model.CityName,
+                CountryName = model.CountryName,
+                StateName = model.StateName,
+                ZipCode = model.ZipCode,
+                // Image = model.Image,
+                Image = string.IsNullOrEmpty(model.Image) ? "" : mediaBaseUrl + model.Image,
+                TypeOfProperty = model.TypeOfProperty,
+                IsDefault = model.IsDefault,
+                IsMoving = false,
+                Status = MovedStatus.None,
+                IsDeleted = false,
+                CreatedBy = userId,
+                CreatedOn = DateTime.UtcNow,
+                UpdatedBy = userId,
+                UpdatedOn = DateTime.UtcNow,
+            });
+            await unitOfWork.CommitAsync();
+
+            if (response != null && response.Id != 0 && model.IsDefault)
+            {
+                var oldEntity = await unitOfWork
+                    .LocationsRepository
+                    .GetAsync(oldEntity => oldEntity.Id != response.Id && oldEntity.CreatedBy == userId
+                                           && !oldEntity.IsDeleted && oldEntity.IsDefault);
+                if (oldEntity != null)
+                {
+                    oldEntity.IsDefault = false;
+                    oldEntity.UpdatedBy = userId;
+                    oldEntity.UpdatedOn = DateTime.UtcNow;
+                    await unitOfWork.CommitAsync();
+                }
+            }
+
+            // Attempt to send a notification but catch any exceptions
+            try
+            {
+                await sendNotificationManager.SendLocationUpdateNotification(new PushNotificationRequestModel()
+                {
+                    RecipientId = userId,
+                    Title = "New Location has been added",
+                    Description = "New Location " + model.Name + " has been added",
+                    NotificationType = NotificationType.LocationUpdate,
+                    ReferenceId = response.Id.ToString()
+                }, userId);
+            }
+            catch (Exception notificationEx)
+            {
+                 return new ManagerBaseResponse<LocationsEntity>()
+        {
+            Message = notificationEx.Message,
+            Result = null,
+        };
+            }
+
+            // Fetch the complete record from the database
+            var fullResponse = await unitOfWork.LocationsRepository.GetAsync(x => x.Id == response.Id);
+
+            return new ManagerBaseResponse<LocationsEntity>()
+            {
+                Message = "Location added successfully.",
+                Result = fullResponse
+            };
         }
+        else
+        {
+            return new ManagerBaseResponse<LocationsEntity>()
+            {
+                Message = "Invalid location request.",
+                Result = null,
+                StatusCode = 500
+            };
+        }
+    }
+    catch (Exception ex)
+    {
+        // Log the error (ensure logging is implemented)
+        // Example: logger.LogError(ex, "Error in AddLocation method.");
+
+        return new ManagerBaseResponse<LocationsEntity>()
+        {
+            Message = ex.Message,
+            Result = null,
+            StatusCode = 500
+        };
+    }
+}
+
+        // public async Task<ManagerBaseResponse<LocationsEntity>> AddLocation(LocationsRequestModel model, string userId)
+        // {
+        //     try
+        //     {
+        //         if (model.Id == 0)
+        //         {
+        //             var isExists = await IsLocationAlreadyExists(null, model.Name, userId);
+        //             if (isExists)
+        //             {
+        //                 return new ManagerBaseResponse<LocationsEntity>()
+        //                 {
+        //                     Message = "Location name already exists",
+        //                     Result = null,
+        //                     StatusCode = 500
+        //                 };
+        //             }
+
+        //             var response = await unitOfWork.LocationsRepository.AddAsync(new LocationsEntity()
+        //             {
+        //                 Id = model.Id,
+        //                 Name = model.Name,
+        //                 AddressLine1 = model.AddressLine1,
+        //                 AddressLine2 = model.AddressLine2,
+        //                 CityName = model.CityName,
+        //                 CountryName = model.CountryName,
+        //                 StateName = model.StateName,
+        //                 ZipCode = model.ZipCode,
+        //                 Image = model.Image,
+        //                 TypeOfProperty = model.TypeOfProperty,
+        //                 IsDefault = model.IsDefault,
+        //                 IsMoving = false,
+        //                 Status = MovedStatus.None,
+        //                 IsDeleted = false,
+        //                 CreatedBy = userId,
+        //                 CreatedOn = DateTime.UtcNow,
+        //                 UpdatedBy = userId,
+        //                 UpdatedOn = DateTime.UtcNow,
+        //             });
+        //             await unitOfWork.CommitAsync();
+
+        //             if (response != null && response.Id != 0 && model.IsDefault)
+        //             {
+        //                 var oldEntity = await unitOfWork
+        //                     .LocationsRepository
+        //                     .GetAsync(oldEntity => oldEntity.Id != response.Id && oldEntity.CreatedBy == userId
+        //                                            && !oldEntity.IsDeleted && oldEntity.IsDefault);
+        //                 if (oldEntity != null)
+        //                 {
+        //                     oldEntity.IsDefault = false;
+        //                     oldEntity.UpdatedBy = userId;
+        //                     oldEntity.UpdatedOn = DateTime.UtcNow;
+        //                     await unitOfWork.CommitAsync();
+        //                 }
+        //             }
+
+        //             await sendNotificationManager.SendLocationUpdateNotification(new PushNotificationRequestModel()
+        //             {
+        //                 RecipientId = userId,
+        //                 Title = "New Location has been added",
+        //                 Description = "New Location " + model.Name + " has been added",
+        //                 NotificationType = NotificationType.LocationUpdate,
+        //                 ReferenceId = model.Id.ToString()
+        //             }, userId);
+
+        //             // Fetch the complete record from the database
+        //             var fullResponse = await unitOfWork.LocationsRepository.GetAsync(x => x.Id == response.Id);
+
+        //             return new ManagerBaseResponse<LocationsEntity>()
+        //             {
+        //                 Message = "Location added successfully.",
+        //                 Result = fullResponse
+        //             };
+        //         }
+        //         else
+        //         {
+        //             return new ManagerBaseResponse<LocationsEntity>()
+        //             {
+        //                 Message = "Invalid location request.",
+        //                 Result = null,
+        //                 StatusCode = 500
+        //             };
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return new ManagerBaseResponse<LocationsEntity>()
+        //         {
+        //             Message = ex.Message,
+        //             Result = null,
+        //             StatusCode = 500
+        //         };
+        //     }
+        // }
         public async Task<ManagerBaseResponse<bool>> UpdateLocation(LocationsRequestModel model, string userId)
         {
             try

@@ -94,11 +94,11 @@ namespace Melbeez.Business.Managers
                 StatusCode = response.Result.StatusCode
             };
         }
-        public async Task<ManagerBaseResponse<bool>> SetItemTransferInvitationEmail(string userEmail, string name, string TransferItemName, string userId,bool isProduct)
+        public async Task<ManagerBaseResponse<bool>> SetItemTransferInvitationEmail(string userEmail, string name, string TransferItemName, string userId, bool isProduct)
         {
             var htmlContent = File.ReadAllText(Path.Combine(environment.WebRootPath, "MailTemplates/ItemTransferInvitation.html"));
             htmlContent = htmlContent.Replace("{Name}", name);
-            htmlContent = htmlContent.Replace("{Item}", isProduct ? "Product":"Location");
+            htmlContent = htmlContent.Replace("{Item}", isProduct ? "Product" : "Location");
             htmlContent = htmlContent.Replace("{ItemName}", TransferItemName);
 
             var response = SendAndManageMailLogs(userEmail, "Melbeez: You have Invitation for Melbeez", htmlContent, userId);

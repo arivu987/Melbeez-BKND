@@ -4,7 +4,7 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:26409",
+      "applicationUrl": "https://localhost:26409",
       "sslPort": 44338
     }
   },
@@ -19,10 +19,10 @@
     },
     "Melbeez": {
       "commandName": "Project",
-      "dotnetRunMessages": "true",
-      "launchBrowser": true,
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
       "launchUrl": "swagger",
-      "applicationUrl": "https://localhost:5001;http://localhost:5000",
+      "applicationUrl": "http://192.168.1.21:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

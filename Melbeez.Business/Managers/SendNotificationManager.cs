@@ -106,26 +106,76 @@ namespace Melbeez.Business.Managers
                 Message = "No expired warranty found.",
             };
         }
-        public async Task<ManagerBaseResponse<bool>> SendLocationUpdateNotification(PushNotificationRequestModel model, string userId)
+    public async Task<ManagerBaseResponse<bool>> SendLocationUpdateNotification(PushNotificationRequestModel model, string userId)
+  {
+    try
+    {
+        if (await GetUserNotificationPreference(userId, "LocationUpdateNotification"))
         {
-            if (await GetUserNotificationPreference(userId, "LocationUpdateNotification"))
+            var deviceTokens = await GetDeviceTokens(userId);
+
+            if (deviceTokens == null || !deviceTokens.Any())
             {
-                var DeviceTokens = await GetDeviceTokens(userId);
-                model.RecipientId = userId;
-                return await SendAndSaveNotification(model, DeviceTokens, userId);
-            }
-            else
-            {
-                model.RecipientId = userId;
-                return await SaveNotification(model, userId);
+                return new ManagerBaseResponse<bool>()
+                {
+                    Message = "No device tokens found for the user.",
+                    Result = false,
+                    StatusCode = 400
+                };
             }
 
+            model.RecipientId = userId;
+            return await SendAndSaveNotification(model, deviceTokens, userId);
         }
-        public async Task<ManagerBaseResponse<bool>> SendProductUpdateNotification(PushNotificationRequestModel model, string userId)
+        else
         {
-            if (await GetUserNotificationPreference(userId, "ProductUpdateNotification"))
+            model.RecipientId = userId;
+            return await SaveNotification(model, userId);
+        }
+    }
+    catch (Exception ex)
+    {
+
+        return new ManagerBaseResponse<bool>()
+        {
+            Message = $"Failed to send notification: {ex.Message}",
+            Result = false,
+            StatusCode = 500
+        };
+    }
+}
+
+        // public async Task<ManagerBaseResponse<bool>> SendLocationUpdateNotification(PushNotificationRequestModel model, string userId)
+        // {
+        //     if (await GetUserNotificationPreference(userId, "LocationUpdateNotification"))
+        //     {
+        //         var DeviceTokens = await GetDeviceTokens(userId);
+        //         model.RecipientId = userId;
+        //         return await SendAndSaveNotification(model, DeviceTokens, userId);
+        //     }
+        //     else
+        //     {
+        //         model.RecipientId = userId;
+        //         return await SaveNotification(model, userId);
+        //     }
+
+        // }
+
+         public async Task<ManagerBaseResponse<bool>> SendProductUpdateNotification(PushNotificationRequestModel model, string userId)
+        {
+		try{
+		      if (await GetUserNotificationPreference(userId, "ProductUpdateNotification"))
             {
                 var DeviceTokens = await GetDeviceTokens(userId);
+				 if (DeviceTokens == null || !DeviceTokens.Any())
+            {
+                return new ManagerBaseResponse<bool>()
+                {
+                    Message = "No device tokens found for the user.",
+                    Result = false,
+                    StatusCode = 400
+                };
+            }
                 model.RecipientId = userId;
                 return await SendAndSaveNotification(model, DeviceTokens, userId);
             }
@@ -135,6 +185,31 @@ namespace Melbeez.Business.Managers
                 return await SaveNotification(model, userId);
             }
         }
+		catch (Exception ex)
+    {
+
+        return new ManagerBaseResponse<bool>()
+        {
+            Message = $"Failed to send notification: {ex.Message}",
+            Result = false,
+            StatusCode = 500
+        };
+    }
+		}
+        // public async Task<ManagerBaseResponse<bool>> SendProductUpdateNotification(PushNotificationRequestModel model, string userId)
+        // {
+        //     if (await GetUserNotificationPreference(userId, "ProductUpdateNotification"))
+        //     {
+        //         var DeviceTokens = await GetDeviceTokens(userId);
+        //         model.RecipientId = userId;
+        //         return await SendAndSaveNotification(model, DeviceTokens, userId);
+        //     }
+        //     else
+        //     {
+        //         model.RecipientId = userId;
+        //         return await SaveNotification(model, userId);
+        //     }
+        // }
         public async Task<ManagerBaseResponse<bool>> SendDeviceActivationNotification(PushNotificationRequestModel model, string userId)
         {
             //TODO :: It is not in scope

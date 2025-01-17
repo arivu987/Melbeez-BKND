@@ -34,6 +34,8 @@ namespace Melbeez.Domain.Entities
         public bool IsDefault { get; set; }
         public bool IsMoving { get; set; }
         public MovedStatus Status { get; set; }
+
+
         public string TransferTo { get; set; }
         [ForeignKey("CreatedBy")]
         public ApplicationUser applicationUser { get; set; } = null!;

@@ -629,7 +629,7 @@ namespace Melbeez.Controllers
                 IsVerifiedByAdmin = user.IsVerifiedByAdmin,
                 CreateOn = user.CreatedDate,
                 UserAddresses = _unitOfWork.AddressesRepository
-                    .GetQueryable(u =>!u.IsDeleted && u.CreatedBy == user.Id)
+                    .GetQueryable(u => !u.IsDeleted && u.CreatedBy == user.Id)
                     .Select(x => new UserAddressesModel()
                     {
                         AddressId = x.Id,

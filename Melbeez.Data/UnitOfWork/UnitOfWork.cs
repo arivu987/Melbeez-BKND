@@ -118,7 +118,7 @@ namespace Melbeez.Data.UnitOfWork
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Exception occurred on SaveChanges.");
+                logger.LogError(ex.Message, "Exception occurred on SaveChanges.");
                 throw;
             }
         }

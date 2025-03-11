@@ -497,7 +497,7 @@ namespace Melbeez.Business.Managers
                 return new ManagerBaseResponse<long?>()
                 {
                     Message = "Product added successfully.",
-                    Result = response.Id
+                    Result = response.Id    
                 };
             }
             catch (Exception ex)

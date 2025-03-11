@@ -8,6 +8,8 @@ namespace Melbeez.Common.Models
         public int success { get; set; }
         public int failure { get; set; }
         public int canonical_ids { get; set; }
+
+        public string name { get; set; }
         public List<PushNotificationRootObjectResult> results { get; set; }
     }
     public class PushNotificationRootObjectResult

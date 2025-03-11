@@ -200,7 +200,7 @@ namespace Melbeez.Controllers
                     Message = message
                 });
             }
-        }
+        } 
 
         /// <summary>
         /// Authenticate a user with username and password
@@ -1837,20 +1837,6 @@ namespace Melbeez.Controllers
                     #endregion
 
                     #region Delete Transfered Items
-                    //var transferedItems = await _unitOfWork.ItemTransferRepository
-                    //                   .GetQueryable(x => !x.IsDeleted && (x.FromUserId == user.Id || x.ToUserId == user.Id))
-                    //                   .ToListAsync();
-
-                    //if (transferedItems.Any())
-                    //{
-                    //    foreach (var item in transferedItems)
-                    //    {
-                    //        item.IsDeleted = true;
-                    //        item.DeletedOn = DateTime.UtcNow;
-                    //        item.DeletedBy = user.Id;
-                    //        await _unitOfWork.CommitAsync();
-                    //    }
-                    //}
                     #endregion
 
                     return ResponseResult(new ManagerBaseResponse<bool>()
@@ -1988,24 +1974,44 @@ namespace Melbeez.Controllers
                 VerificationReminderCount = user.VerificationReminderCount
             };
         }
+
         SecurityToken GetToken(string username, string userId, string role)
+{
+    var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["JWTSecretKey"]));
+    var tokenDescriptor = new SecurityTokenDescriptor
+    {
+        Subject = new ClaimsIdentity(new Claim[]
         {
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["JWTSecretKey"]);
-            DateTime ExpireDateTime = DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["AccessTokenExpireInMinutes"]));
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                     new Claim(ClaimTypes.Name, username)
-                    ,new Claim(ClaimTypes.NameIdentifier, userId)
-                    ,new Claim(ClaimTypes.Role, role)
-                }),
-                Expires = ExpireDateTime,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            return tokenHandler.CreateToken(tokenDescriptor);
-        }
+            new Claim(ClaimTypes.Name, username),
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim(ClaimTypes.Role, role)
+        }),
+        Expires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["AccessTokenExpireInMinutes"])),
+        SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature)
+    };
+
+    var tokenHandler = new JwtSecurityTokenHandler();
+    return tokenHandler.CreateToken(tokenDescriptor);
+}
+
+        // SecurityToken GetToken(string username, string userId, string role)
+        // {
+        //     JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+        //     var key = Encoding.ASCII.GetBytes(_configuration["JWTSecretKey"]);
+        //     DateTime ExpireDateTime = DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["AccessTokenExpireInMinutes"]));
+        //     var tokenDescriptor = new SecurityTokenDescriptor
+        //     {
+        //         Subject = new ClaimsIdentity(new Claim[]
+        //         {
+        //              new Claim(ClaimTypes.Name, username)
+        //             ,new Claim(ClaimTypes.NameIdentifier, userId)
+        //             ,new Claim(ClaimTypes.Role, role)
+        //         }),
+        //         Expires = ExpireDateTime,
+        //         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        //     };
+        //     return tokenHandler.CreateToken(tokenDescriptor);
+        // }
         string GetIpAddress()
         {
             // get source ip address for the current request

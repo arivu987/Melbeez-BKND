@@ -20,9 +20,9 @@
     "Melbeez": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "launchBrowser": false,
+      "launchBrowser": false, 
       "launchUrl": "swagger",
-      "applicationUrl": "http://192.168.1.21:5000",
+      "applicationUrl": "http://localhost:8000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

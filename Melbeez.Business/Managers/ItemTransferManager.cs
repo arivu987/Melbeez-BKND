@@ -8,6 +8,7 @@ using Melbeez.Data.UnitOfWork;
 using Melbeez.Domain.Entities;
 using Melbeez.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -25,15 +26,18 @@ namespace Melbeez.Business.Managers
         private readonly ISendNotificationManager sendNotificationManager;
         private readonly UserManager<ApplicationUser> userManager;
 
+        private readonly ILogger<ItemTransferManager> _logger;
+
         public ItemTransferManager(IUnitOfWork unitOfWork,
                                IConfiguration configuration,
                                ISendNotificationManager sendNotificationManager,
-                               UserManager<ApplicationUser> userManager)
+                               UserManager<ApplicationUser> userManager, ILogger<ItemTransferManager> logger)
         {
             this.unitOfWork = unitOfWork;
             this.configuration = configuration;
             this.sendNotificationManager = sendNotificationManager;
             this.userManager = userManager;
+            this._logger = logger;
         }
         public async Task<ManagerBaseResponse<List<TransferItemResponse>>> GetTransferItem(string userId, bool isRecevier, MovedStatus? status)
         {
@@ -485,42 +489,68 @@ namespace Melbeez.Business.Managers
                 };
             }
         }
+
+
         public async Task<ManagerBaseResponse<bool>> CancelOrRejectTransferItem(string transferId, MovedStatus movedStatus, string userId)
         {
             try
             {
                 var userData = userManager.Users
-                              .Where(x => !x.IsDeleted && x.Id == userId)
-                              .FirstOrDefault();
+                              .FirstOrDefault(x => !x.IsDeleted && x.Id == userId);
+
+                if (userData == null)
+                {
+                    return new ManagerBaseResponse<bool>()
+                    {
+                        Message = "User not found.",
+                        Result = false,
+                        StatusCode = 404
+                    };
+                }
 
                 var itemTransferlst = await unitOfWork.ItemTransferRepository
-                                    .GetListAsync(x => x.TransferId == transferId);
+                                        .GetListAsync(x => x.TransferId == transferId);
 
-                if (itemTransferlst != null)
+                if (itemTransferlst == null || !itemTransferlst.Any())
                 {
-                    foreach (var itemTransfer in itemTransferlst)
+                    return new ManagerBaseResponse<bool>()
                     {
-                        itemTransfer.Status = movedStatus;
-                        itemTransfer.UpdatedBy = userId;
-                        itemTransfer.UpdatedOn = DateTime.UtcNow;
-                        await unitOfWork.CommitAsync();
+                        Message = "Transfer item not found.",
+                        Result = false,
+                        StatusCode = 404
+                    };
+                }
 
-                        if (itemTransfer.IsProduct)
+                Console.WriteLine($"TransferId: {transferId}, Found items: {itemTransferlst.Count()}");
+
+
+                foreach (var itemTransfer in itemTransferlst)
+                {
+                    itemTransfer.Status = movedStatus;
+                    itemTransfer.UpdatedBy = userId;
+                    itemTransfer.UpdatedOn = DateTime.UtcNow;
+                    await unitOfWork.CommitAsync();
+
+                    if (itemTransfer.IsProduct)
+                    {
+                        var productInfo = await unitOfWork.ProductsRepository
+                                        .GetAsync(x => !x.IsDeleted && x.Id == itemTransfer.ItemId);
+                        if (productInfo != null)
                         {
-                            var productInfo = await unitOfWork.ProductsRepository
-                                            .GetAsync(x => !x.IsDeleted && x.Id == itemTransfer.ItemId);
-                            if (productInfo != null)
-                            {
-                                productInfo.TransferTo = null;
-                                productInfo.IsMoving = false;
-                                productInfo.Status = MovedStatus.None;
-                                await unitOfWork.CommitAsync();
+                            productInfo.TransferTo = null;
+                            productInfo.IsMoving = false;
+                            productInfo.Status = MovedStatus.None;
+                            await unitOfWork.CommitAsync();
 
-                                var senderName = string.Concat(userData.FirstName, " ", userData.LastName);
-                                var title = movedStatus == MovedStatus.Cancelled ? "Product transfer request cancelled" : "Product transfer request rejeted";
-                                var description = movedStatus == MovedStatus.Cancelled
-                                                    ? senderName + " cancelled transfer request for '" + productInfo.Name + "' product to you."
-                                                    : senderName + " rejected transfer request for '" + productInfo.Name + "' product to you.";
+                            var senderName = string.Concat(userData.FirstName, " ", userData.LastName);
+                            var title = movedStatus == MovedStatus.Cancelled ? "Product transfer request cancelled" : "Product transfer request rejected";
+                            var description = movedStatus == MovedStatus.Cancelled
+                                                ? senderName + " cancelled transfer request for '" + productInfo.Name + "' product to you."
+                                                : senderName + " rejected transfer request for '" + productInfo.Name + "' product to you.";
+                            try
+                            {
+                                Console.WriteLine($"Sending notification to: {(movedStatus == MovedStatus.Rejected ? itemTransfer.ToUserId : itemTransfer.FromUserId)}");
+
                                 await sendNotificationManager.SendItemTransferNotification(new PushNotificationRequestModel()
                                 {
                                     RecipientId = movedStatus == MovedStatus.Rejected ? itemTransfer.ToUserId : itemTransfer.FromUserId,
@@ -531,71 +561,81 @@ namespace Melbeez.Business.Managers
                                     Status = movedStatus
                                 }, userId);
                             }
-                        }
-                        else
-                        {
-                            var locationInfo = await unitOfWork.LocationsRepository
-                                            .GetAsync(x => !x.IsDeleted && x.Id == itemTransfer.ItemId);
-
-                            if (locationInfo != null)
+                            catch (Exception ex)
                             {
-                                locationInfo.TransferTo = null;
-                                locationInfo.IsMoving = false;
-                                locationInfo.Status = MovedStatus.None;
-                                await unitOfWork.CommitAsync();
-
-                                var productInfoList = await unitOfWork.ProductsRepository
-                                                    .GetQueryable(x => !x.IsDeleted && x.LocationId == locationInfo.Id
-                                                                    && itemTransfer.DependentProductIds.Contains(x.Id.ToString()))
-                                                    .ToListAsync();
-
-                                if (productInfoList.Any())
-                                {
-                                    foreach (var productInfo in productInfoList)
-                                    {
-                                        productInfo.TransferTo = null;
-                                        productInfo.IsMoving = false;
-                                        productInfo.Status = MovedStatus.None;
-                                        await unitOfWork.CommitAsync();
-                                    }
-                                }
-
-                                var senderName = string.Concat(userData.FirstName, " ", userData.LastName);
-                                var title = movedStatus == MovedStatus.Cancelled ? "Location transfer request cancelled" : "Location transfer request rejeted";
-                                var description = movedStatus == MovedStatus.Cancelled
-                                                    ? senderName + " cancelled transfer request for '" + locationInfo.Name + "' location to you."
-                                                    : senderName + " rejected transfer request for '" + locationInfo.Name + "' location to you.";
-
-                                await sendNotificationManager.SendItemTransferNotification(new PushNotificationRequestModel()
-                                {
-                                    RecipientId = movedStatus == MovedStatus.Rejected ? userId : itemTransfer.FromUserId,
-                                    Title = title,
-                                    Description = description,
-                                    NotificationType = NotificationType.ItemMove,
-                                    ReferenceId = transferId,
-                                    Status = movedStatus
-                                }, userId);
+                                Console.WriteLine($"Error sending notification: {ex.Message}");
+                                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
                             }
+
+
+                        }
+                    }
+                    else
+                    {
+                        var locationInfo = await unitOfWork.LocationsRepository
+                                        .GetAsync(x => !x.IsDeleted && x.Id == itemTransfer.ItemId);
+
+                        if (locationInfo != null)
+                        {
+                            locationInfo.TransferTo = null;
+                            locationInfo.IsMoving = false;
+                            locationInfo.Status = MovedStatus.None;
+                            await unitOfWork.CommitAsync();
+
+                            var productInfoList = await unitOfWork.ProductsRepository
+                                                .GetQueryable(x => !x.IsDeleted && x.LocationId == locationInfo.Id
+                                                                && itemTransfer.DependentProductIds.Contains(x.Id.ToString()))
+                                                .ToListAsync();
+
+                            if (productInfoList.Any())
+                            {
+                                foreach (var productInfo in productInfoList)
+                                {
+                                    productInfo.TransferTo = null;
+                                    productInfo.IsMoving = false;
+                                    productInfo.Status = MovedStatus.None;
+                                    await unitOfWork.CommitAsync();
+                                }
+                            }
+
+                            var senderName = string.Concat(userData.FirstName, " ", userData.LastName);
+                            var title = movedStatus == MovedStatus.Cancelled ? "Location transfer request cancelled" : "Location transfer request rejected";
+                            var description = movedStatus == MovedStatus.Cancelled
+                                                ? senderName + " cancelled transfer request for '" + locationInfo.Name + "' location to you."
+                                                : senderName + " rejected transfer request for '" + locationInfo.Name + "' location to you.";
+
+                            await sendNotificationManager.SendItemTransferNotification(new PushNotificationRequestModel()
+                            {
+                                RecipientId = movedStatus == MovedStatus.Rejected ? userId : itemTransfer.FromUserId,
+                                Title = title,
+                                Description = description,
+                                NotificationType = NotificationType.ItemMove,
+                                ReferenceId = transferId,
+                                Status = movedStatus
+                            }, userId);
                         }
                     }
                 }
 
                 return new ManagerBaseResponse<bool>()
                 {
-                    Message = "Item transfer request cancel or Rejected successfully.",
-                    Result = true
+                    Message = "Item transfer request cancelled or rejected successfully.",
+                    Result = true,
+                    StatusCode = 200
                 };
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error in CancelOrRejectTransferItem: {ex.Message}");
                 return new ManagerBaseResponse<bool>()
                 {
-                    Message = ex.Message,
+                    Message = "An unexpected error occurred.",
                     Result = false,
                     StatusCode = 500
                 };
             }
         }
+        
         public async Task<ManagerBaseResponse<bool>> ApproveTransferItem(string transferId, string userId, bool IsSameLocation, long? locationId)
         {
             try
@@ -604,14 +644,53 @@ namespace Melbeez.Business.Managers
                                     .GetQueryable(x => x.TransferId == transferId)
                                     .ToListAsync();
 
+
+                if (itemTransfers == null || !itemTransfers.Any())
+                {
+                    _logger.LogError("No item transfers found for Transfer ID: {transferId}", transferId);
+                    return new ManagerBaseResponse<bool>()
+                    {
+                        Message = "No item transfers found for the given Transfer ID.",
+                        Result = false,
+                        StatusCode = 404
+                    };
+                }
+
+
+
+
                 foreach (var item in itemTransfers)
                 {
+
+                    if (item == null)
+                    {
+                        _logger.LogError("Item in itemTransfers is null for Transfer ID: {transferId}", transferId);
+                        return new ManagerBaseResponse<bool>()
+                        {
+                            Message = "An item in the transfer list is null.",
+                            Result = false,
+                            StatusCode = 500
+                        };
+                    }
+
                     if (item.IsProduct)
                     {
                         var product = await unitOfWork.ProductsRepository
                             .GetAsync(x => !x.IsDeleted && x.Id == item.ItemId
                                         && x.Status != MovedStatus.Transferred);
                         await AddProduct(product, IsSameLocation ? product.LocationId : locationId, userId);
+
+                        if (product == null)
+                        {
+                            _logger.LogError("Product not found for Item ID: {ItemId}", item.ItemId);
+                            return new ManagerBaseResponse<bool>()
+                            {
+                                Message = "Product not found or has already been transferred.",
+                                Result = false,
+                                StatusCode = 404
+                            };
+                        }
+
                     }
                     else
                     {
@@ -625,6 +704,18 @@ namespace Melbeez.Business.Managers
                         var location = await unitOfWork.LocationsRepository
                             .GetAsync(x => !x.IsDeleted && x.Id == item.ItemId
                                         && x.Status != MovedStatus.Transferred && x.TransferTo == userId);
+
+                        if (location == null)
+                        {
+                            _logger.LogError("Location not found for Item ID: {ItemId}", item.ItemId);
+                            return new ManagerBaseResponse<bool>()
+                            {
+                                Message = "Location not found.",
+                                Result = false,
+                                StatusCode = 404
+                            };
+                        }
+
 
                         if (IsSameLocation)
                         {
@@ -672,6 +763,20 @@ namespace Melbeez.Business.Managers
                         {
                             var differlocation = await unitOfWork.LocationsRepository
                                 .GetAsync(x => !x.IsDeleted && x.Id == locationId && x.Status != MovedStatus.Transferred);
+
+
+
+                            if (differlocation == null)
+                            {
+                                _logger.LogError("Target location not found for Location ID: {locationId}", locationId);
+                                return new ManagerBaseResponse<bool>()
+                                {
+                                    Message = "Target location not found.",
+                                    Result = false,
+                                    StatusCode = 404
+                                };
+                            }
+
                             foreach (var productId in locationProductIds)
                             {
                                 var product = await unitOfWork.ProductsRepository
@@ -713,6 +818,10 @@ namespace Melbeez.Business.Managers
             }
             catch (Exception ex)
             {
+                _logger.LogInformation("Approving transfer for TransferId: {transferId}, UserId: {userId}, IsSameLocation: {IsSameLocation}, LocationId: {locationId}",
+      transferId, userId, IsSameLocation, locationId);
+
+
                 return new ManagerBaseResponse<bool>()
                 {
                     Message = ex.Message,
@@ -895,7 +1004,8 @@ namespace Melbeez.Business.Managers
                             var locationlst = await unitOfWork.LocationsRepository
                                 .GetQueryable(x => !x.IsDeleted && itemIds.Select(i => i.ItemId).Contains(x.Id))
                                 .Include(u => u.ProductDetail)
-                                .Select(x => new LocationTransferResponseModel(){
+                                .Select(x => new LocationTransferResponseModel()
+                                {
                                     Id = x.Id,
                                     Name = x.Name,
                                     AddressLine1 = x.AddressLine1,

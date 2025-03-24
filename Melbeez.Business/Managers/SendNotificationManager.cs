@@ -10,6 +10,7 @@ using Melbeez.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -106,110 +107,81 @@ namespace Melbeez.Business.Managers
                 Message = "No expired warranty found.",
             };
         }
-    public async Task<ManagerBaseResponse<bool>> SendLocationUpdateNotification(PushNotificationRequestModel model, string userId)
-  {
-    try
-    {
-        if (await GetUserNotificationPreference(userId, "LocationUpdateNotification"))
+        public async Task<ManagerBaseResponse<bool>> SendLocationUpdateNotification(PushNotificationRequestModel model, string userId)
         {
-            var deviceTokens = await GetDeviceTokens(userId);
-
-            if (deviceTokens == null || !deviceTokens.Any())
+            try
             {
+                if (await GetUserNotificationPreference(userId, "LocationUpdateNotification"))
+                {
+                    var deviceTokens = await GetDeviceTokens(userId);
+
+                    if (deviceTokens == null || !deviceTokens.Any())
+                    {
+                        return new ManagerBaseResponse<bool>()
+                        {
+                            Message = "No device tokens found for the user.",
+                            Result = false,
+                            StatusCode = 400
+                        };
+                    }
+
+                    model.RecipientId = userId;
+                    return await SendAndSaveNotification(model, deviceTokens, userId);
+                }
+                else
+                {
+                    model.RecipientId = userId;
+                    return await SaveNotification(model, userId);
+                }
+            }
+            catch (Exception ex)
+            {
+
                 return new ManagerBaseResponse<bool>()
                 {
-                    Message = "No device tokens found for the user.",
+                    Message = $"Failed to send notification: {ex.Message}",
                     Result = false,
-                    StatusCode = 400
+                    StatusCode = 500
                 };
             }
-
-            model.RecipientId = userId;
-            return await SendAndSaveNotification(model, deviceTokens, userId);
         }
-        else
+
+        public async Task<ManagerBaseResponse<bool>> SendProductUpdateNotification(PushNotificationRequestModel model, string userId)
         {
-            model.RecipientId = userId;
-            return await SaveNotification(model, userId);
-        }
-    }
-    catch (Exception ex)
-    {
-
-        return new ManagerBaseResponse<bool>()
-        {
-            Message = $"Failed to send notification: {ex.Message}",
-            Result = false,
-            StatusCode = 500
-        };
-    }
-}
-
-        // public async Task<ManagerBaseResponse<bool>> SendLocationUpdateNotification(PushNotificationRequestModel model, string userId)
-        // {
-        //     if (await GetUserNotificationPreference(userId, "LocationUpdateNotification"))
-        //     {
-        //         var DeviceTokens = await GetDeviceTokens(userId);
-        //         model.RecipientId = userId;
-        //         return await SendAndSaveNotification(model, DeviceTokens, userId);
-        //     }
-        //     else
-        //     {
-        //         model.RecipientId = userId;
-        //         return await SaveNotification(model, userId);
-        //     }
-
-        // }
-
-         public async Task<ManagerBaseResponse<bool>> SendProductUpdateNotification(PushNotificationRequestModel model, string userId)
-        {
-		try{
-		      if (await GetUserNotificationPreference(userId, "ProductUpdateNotification"))
+            try
             {
-                var DeviceTokens = await GetDeviceTokens(userId);
-				 if (DeviceTokens == null || !DeviceTokens.Any())
+                if (await GetUserNotificationPreference(userId, "ProductUpdateNotification"))
+                {
+                    var DeviceTokens = await GetDeviceTokens(userId);
+                    if (DeviceTokens == null || !DeviceTokens.Any())
+                    {
+                        return new ManagerBaseResponse<bool>()
+                        {
+                            Message = "No device tokens found for the user.",
+                            Result = false,
+                            StatusCode = 400
+                        };
+                    }
+                    model.RecipientId = userId;
+                    return await SendAndSaveNotification(model, DeviceTokens, userId);
+                }
+                else
+                {
+                    model.RecipientId = userId;
+                    return await SaveNotification(model, userId);
+                }
+            }
+            catch (Exception ex)
             {
+
                 return new ManagerBaseResponse<bool>()
                 {
-                    Message = "No device tokens found for the user.",
+                    Message = $"Failed to send notification: {ex.Message}",
                     Result = false,
-                    StatusCode = 400
+                    StatusCode = 500
                 };
             }
-                model.RecipientId = userId;
-                return await SendAndSaveNotification(model, DeviceTokens, userId);
-            }
-            else
-            {
-                model.RecipientId = userId;
-                return await SaveNotification(model, userId);
-            }
         }
-		catch (Exception ex)
-    {
-
-        return new ManagerBaseResponse<bool>()
-        {
-            Message = $"Failed to send notification: {ex.Message}",
-            Result = false,
-            StatusCode = 500
-        };
-    }
-		}
-        // public async Task<ManagerBaseResponse<bool>> SendProductUpdateNotification(PushNotificationRequestModel model, string userId)
-        // {
-        //     if (await GetUserNotificationPreference(userId, "ProductUpdateNotification"))
-        //     {
-        //         var DeviceTokens = await GetDeviceTokens(userId);
-        //         model.RecipientId = userId;
-        //         return await SendAndSaveNotification(model, DeviceTokens, userId);
-        //     }
-        //     else
-        //     {
-        //         model.RecipientId = userId;
-        //         return await SaveNotification(model, userId);
-        //     }
-        // }
         public async Task<ManagerBaseResponse<bool>> SendDeviceActivationNotification(PushNotificationRequestModel model, string userId)
         {
             //TODO :: It is not in scope
@@ -250,70 +222,118 @@ namespace Melbeez.Business.Managers
                 StatusCode = 500
             };
         }
+
         private async Task<ManagerBaseResponse<bool>> SendAndSaveNotification(PushNotificationRequestModel model, List<string> DeviceTokens, string userId)
         {
-            string firbaseKey = configuration["FireBaseNotification:FireBase.Key"];
-            string firbaseUrl = configuration["FireBaseNotification:FireBase.RequestUrl"];
-            if (DeviceTokens.Any())
+            string firebaseAccount = configuration["FireBaseNotification:FireBase.Accounts"];
+            string firebaseUrl = configuration["FireBaseNotification:FireBase.RequestUrl"];
+
+            // Ensure we return a response even if no devices are found
+            if (DeviceTokens == null || !DeviceTokens.Any())
             {
-                string responseData = NotificationService.Send(DeviceTokens, model.Title, model.Description, model.NotificationType.ToString(), model.ReferenceId, null, null, firbaseKey, firbaseUrl);
-                if (!string.IsNullOrEmpty(responseData))
-                {
-                    var item = Newtonsoft.Json.JsonConvert.DeserializeObject<FirebaseNotificationResponse>(responseData);
-                    if (item.success > 0)
-                    {
-                        await pushNotificationManager.Add(new PushNotificationModel()
-                        {
-                            RecipientId = model.RecipientId,
-                            Title = model.Title,
-                            Description = model.Description,
-                            Type = model.NotificationType,
-                            IsSuccess = true,
-                            IsRead = false,
-                            ReferenceId = string.IsNullOrEmpty(model.ReferenceId) ? null : model.ReferenceId,
-                            ExpiryDate = null,
-                            ErrorMeassge = null,
-                            Status = model.Status == null ? null : (MovedStatus)model.Status
-                        }, userId);
-                    }
-                    else if (item.results.Any())
-                    {
-                        await pushNotificationManager.Add(new PushNotificationModel()
-                        {
-                            RecipientId = model.RecipientId,
-                            Title = model.Title,
-                            Description = model.Description,
-                            Type = model.NotificationType,
-                            IsSuccess = false,
-                            IsRead = false,
-                            ReferenceId = string.IsNullOrEmpty(model.ReferenceId) ? null : model.ReferenceId,
-                            ExpiryDate = null,
-                            ErrorMeassge = item.results.Select(s => s.error).FirstOrDefault(),
-                            Status = model.Status == null ? null : (MovedStatus)model.Status
-                        }, userId);
-                    }
-                    return new ManagerBaseResponse<bool>()
-                    {
-                        Result = item.results.Any() ? false : true,
-                        Message = item.results.Select(s => s.error).FirstOrDefault() == null
-                                  ? "Notification sent successfully."
-                                  : item.results.Select(s => s.error).FirstOrDefault()
-                    };
-                }
                 return new ManagerBaseResponse<bool>()
                 {
                     Result = false,
-                    Message = "Notification service not responding.",
+                    Message = "No devices are found",
                     StatusCode = 500
                 };
             }
+
+            string responseData = string.Empty; // ✅ Move responseData outside try for better debugging
+
+            try
+            {
+                responseData = await NotificationService.Send(DeviceTokens, model.Title, model.Description, model.NotificationType.ToString(), model.ReferenceId, userId, firebaseAccount, firebaseUrl);
+
+                if (string.IsNullOrWhiteSpace(responseData))
+                {
+                    throw new Exception("Firebase response is empty or null.");
+                }
+
+                Console.WriteLine($"Firebase Response: {responseData}");
+
+                // ✅ Deserialize response while handling unexpected formats
+                var item = JsonConvert.DeserializeObject<FirebaseNotificationResponse>(responseData);
+
+                if (item == null)
+                {
+                    throw new Exception("Failed to parse Firebase response.");
+                }
+
+                // ✅ Check if the notification was successfully sent
+                if (!string.IsNullOrEmpty(item.name))
+                {
+                    Console.WriteLine($"Notification sent successfully. Message ID: {item.name}");
+
+                    await pushNotificationManager.Add(new PushNotificationModel()
+                    {
+                        RecipientId = model.RecipientId,
+                        Title = model.Title,
+                        Description = model.Description,
+                        Type = model.NotificationType,
+                        IsSuccess = true,  // ✅ Mark as successful
+                        IsRead = false,
+                        ReferenceId = string.IsNullOrEmpty(model.ReferenceId) ? null : model.ReferenceId,
+                        ExpiryDate = null,
+                        ErrorMeassge = null,
+                        Status = model.Status == null ? null : (MovedStatus)model.Status
+                    }, userId);
+
+                    return new ManagerBaseResponse<bool>
+                    {
+                        Result = true,
+                        Message = "Notification sent successfully."
+                    };
+                }
+
+                // ✅ Handle the old API response format with `results`
+                if (item.results != null && item.results.Any())
+                {
+                    var firstError = item.results.Select(s => s.error).FirstOrDefault();
+
+                    await pushNotificationManager.Add(new PushNotificationModel()
+                    {
+                        RecipientId = model.RecipientId,
+                        Title = model.Title,
+                        Description = model.Description,
+                        Type = model.NotificationType,
+                        IsSuccess = false,
+                        IsRead = false,
+                        ReferenceId = string.IsNullOrEmpty(model.ReferenceId) ? null : model.ReferenceId,
+                        ExpiryDate = null,
+                        ErrorMeassge = firstError,
+                        Status = model.Status == null ? null : (MovedStatus)model.Status
+                    }, userId);
+
+                    return new ManagerBaseResponse<bool>
+                    {
+                        Result = false,
+                        Message = string.IsNullOrEmpty(firstError) ? "Notification failed" : firstError
+                    };
+                }
+
+                throw new Exception("Unexpected Firebase response format.");
+            }
+            catch (JsonReaderException ex)
+            {
+                Console.WriteLine($"JSON Parse Error: {ex.Message}");
+                Console.WriteLine($"Response Data: {responseData}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected Error: {ex.Message}");
+            }
+
+            // ✅ Default failure response if Firebase service fails
             return new ManagerBaseResponse<bool>()
             {
                 Result = false,
-                Message = "No devices are found",
+                Message = "Notification service not responding.",
                 StatusCode = 500
             };
         }
+
+
         private async Task<ManagerBaseResponse<bool>> SaveNotification(PushNotificationRequestModel model, string userId)
         {
 

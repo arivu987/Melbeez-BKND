@@ -25,6 +25,8 @@ namespace Melbeez.Domain.Entities
         [Required]
         public bool IsDefault { get; set; }
         public bool IsSameMailingAddress { get; set; }
+        
+
         [ForeignKey("CreatedBy")]
         public ApplicationUser applicationUser { get; set; } = null!;
     }

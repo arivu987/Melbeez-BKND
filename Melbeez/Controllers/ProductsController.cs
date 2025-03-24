@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,9 +32,13 @@ namespace Melbeez.Controllers
     public class ProductsController : BaseController
     {
         private readonly IProductsManager _productsManager;
-        public ProductsController(IProductsManager productsManager)
+
+        private readonly ILogger<ProductsController> _logger;
+
+        public ProductsController(IProductsManager productsManager,ILogger<ProductsController> logger)
         {
             _productsManager = productsManager;
+            _logger = logger;
         }
 
         /// <summary>
@@ -77,12 +82,25 @@ namespace Melbeez.Controllers
         [ProducesResponseType(typeof(ApiBaseResponse<long?>), StatusCodes.Status200OK)]
         public async Task<IActionResult> AddProduct(ProductRequestModel model)
         {
+             _logger.LogInformation("AddProduct API called.");
+
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Requested model is not valid: {@Model}", model);
                 throw new Exception("Requested model is not valid.");
             }
            
-            return ResponseResult(await _productsManager.AddProduct(model, User.Claims.GetUserId()));
+                try
+             {
+            var result = await _productsManager.AddProduct(model, User.Claims.GetUserId());
+            _logger.LogInformation("Product added successfully with ID: {ProductId}", result);
+            return ResponseResult(result);
+              }
+            catch (Exception ex)
+           {
+            _logger.LogError(ex, "Error occurred while adding product.");
+            throw;  
+            }
         }
         /// <summary>
         /// Update an existing product

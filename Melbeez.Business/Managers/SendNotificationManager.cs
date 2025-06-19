@@ -239,7 +239,7 @@ namespace Melbeez.Business.Managers
                 };
             }
 
-            string responseData = string.Empty; // ✅ Move responseData outside try for better debugging
+            string responseData = string.Empty;
 
             try
             {
@@ -252,7 +252,6 @@ namespace Melbeez.Business.Managers
 
                 Console.WriteLine($"Firebase Response: {responseData}");
 
-                // ✅ Deserialize response while handling unexpected formats
                 var item = JsonConvert.DeserializeObject<FirebaseNotificationResponse>(responseData);
 
                 if (item == null)
@@ -260,7 +259,6 @@ namespace Melbeez.Business.Managers
                     throw new Exception("Failed to parse Firebase response.");
                 }
 
-                // ✅ Check if the notification was successfully sent
                 if (!string.IsNullOrEmpty(item.name))
                 {
                     Console.WriteLine($"Notification sent successfully. Message ID: {item.name}");
@@ -271,7 +269,7 @@ namespace Melbeez.Business.Managers
                         Title = model.Title,
                         Description = model.Description,
                         Type = model.NotificationType,
-                        IsSuccess = true,  // ✅ Mark as successful
+                        IsSuccess = true,  
                         IsRead = false,
                         ReferenceId = string.IsNullOrEmpty(model.ReferenceId) ? null : model.ReferenceId,
                         ExpiryDate = null,
@@ -286,7 +284,6 @@ namespace Melbeez.Business.Managers
                     };
                 }
 
-                // ✅ Handle the old API response format with `results`
                 if (item.results != null && item.results.Any())
                 {
                     var firstError = item.results.Select(s => s.error).FirstOrDefault();
@@ -324,7 +321,6 @@ namespace Melbeez.Business.Managers
                 Console.WriteLine($"Unexpected Error: {ex.Message}");
             }
 
-            // ✅ Default failure response if Firebase service fails
             return new ManagerBaseResponse<bool>()
             {
                 Result = false,

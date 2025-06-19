@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0
+FROM mcr.microsoft.com/dotnet/sdk:6.0.100
 WORKDIR /melbeez-bknd
 COPY . .
 RUN dotnet build -c Release

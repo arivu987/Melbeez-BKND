@@ -218,7 +218,6 @@ namespace Melbeez.Business.Managers
         {
             try
             {
-
                 var mediaBaseUrl = configuration.GetValue<string>("MediaUploadConfiguration:MediaBaseUrl");
 
                 if (model.Id == 0)
@@ -244,8 +243,8 @@ namespace Melbeez.Business.Managers
                         CountryName = model.CountryName,
                         StateName = model.StateName,
                         ZipCode = model.ZipCode,
-                        // Image = model.Image,
-                        Image = string.IsNullOrEmpty(model.Image) ? "" : mediaBaseUrl + model.Image,
+                        Image = model.Image,
+                        // Image = string.IsNullOrEmpty(model.Image) ? "" : model.Image,
                         TypeOfProperty = model.TypeOfProperty,
                         IsDefault = model.IsDefault,
                         IsMoving = false,
@@ -355,6 +354,7 @@ namespace Melbeez.Business.Managers
                     entity.ZipCode = model.ZipCode;
                     entity.CountryName = model.CountryName;
                     entity.StateName = model.StateName;
+                    Console.WriteLine("image =>" + model.Image);
                     entity.Image = model.Image;
                     entity.TypeOfProperty = model.TypeOfProperty;
                     entity.IsDefault = model.IsDefault;
